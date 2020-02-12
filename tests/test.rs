@@ -85,10 +85,66 @@ fn test_write_header() {
         .unwrap();
 }
 
-
 #[test]
 fn test_partition_type_fromstr() {
-    assert_eq!(gpt::partition_types::Type::from_str("933AC7E1-2EB4-4F13-B844-0E14E2AEF915").unwrap(), gpt::partition_types::LINUX_HOME);
-    assert_eq!(gpt::partition_types::Type::from_str("114EAFFE-1552-4022-B26E-9B053604CF84").unwrap(), gpt::partition_types::ANDROID_BOOTLOADER2);
-    assert_eq!(gpt::partition_types::Type::from_str("00000000-0000-0000-0000-000000000000").unwrap(), gpt::partition_types::UNUSED);
+    assert_eq!(
+        gpt::partition_types::Type::from_str("933AC7E1-2EB4-4F13-B844-0E14E2AEF915").unwrap(),
+        gpt::partition_types::LINUX_HOME
+    );
+    assert_eq!(
+        gpt::partition_types::Type::from_str("114EAFFE-1552-4022-B26E-9B053604CF84").unwrap(),
+        gpt::partition_types::ANDROID_BOOTLOADER2
+    );
+    assert_eq!(
+        gpt::partition_types::Type::from_str("00000000-0000-0000-0000-000000000000").unwrap(),
+        gpt::partition_types::UNUSED
+    );
+}
+
+#[test]
+fn test_read_fdisk() {
+    let expected_header = Header {
+        signature: "EFI PART".to_string(),
+        revision: 65536,
+        header_size_le: 92,
+        crc32: 2605617263,
+        reserved: 0,
+        current_lba: 1,
+        backup_lba: 204799,
+        first_usable: 2048,
+        last_usable: 204766,
+        disk_guid: uuid::Uuid::from_str("4ec73dcd-4b5a-5045-9d74-d36c12f6d9a3").unwrap(),
+        part_start: 2,
+        num_parts: 128,
+        part_size: 128,
+        crc32_parts: 2214351575,
+    };
+    let diskpath = Path::new("tests/fixtures/fdisk.img");
+    let h = read_header(diskpath, disk::DEFAULT_SECTOR_SIZE).unwrap();
+
+    println!("header: {:?}", h);
+    assert_eq!(h, expected_header);
+
+    let expected_partitions = [
+        Partition {
+            part_type_guid: gpt::partition_types::LINUX_FS,
+            part_guid: uuid::Uuid::from_str("63ae360b-16b7-4e43-9a20-263d50df5554").unwrap(),
+            first_lba: 2048,
+            last_lba: 2067,
+            flags: 0,
+            name: "".to_string(),
+        },
+        Partition {
+            part_type_guid: gpt::partition_types::LINUX_FS,
+            part_guid: uuid::Uuid::from_str("2281aca4-cbb4-f140-9331-a5a406c97a51").unwrap(),
+            first_lba: 4096,
+            last_lba: 4195,
+            flags: 0,
+            name: "".to_string(),
+        },
+    ];
+    let p = read_partitions(diskpath, &h, disk::DEFAULT_SECTOR_SIZE).unwrap();
+    println!("Partitions: {:?}", p);
+    assert_eq!(*p.get(&1).unwrap(), expected_partitions[0]);
+    assert_eq!(*p.get(&2).unwrap(), expected_partitions[1]);
 }
