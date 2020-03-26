@@ -100,7 +100,10 @@ impl Header {
                 Some(header) => header.part_size,
                 None => 128,
             },
-            crc32_parts: 0,
+            crc32_parts: match original_header {
+                Some(header) => header.crc32_parts,
+                None => 0,
+            },
         };
 
         Ok(hdr)
