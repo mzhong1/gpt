@@ -374,7 +374,7 @@ pub(crate) fn find_backup_lba<D: Read + Seek>(
 }
 
 fn calculate_crc32(b: &[u8]) -> Result<u32> {
-    let mut digest = crc32::Digest::new(crc32::CASTAGNOLI);
+    let mut digest = crc32::Digest::new(crc32::KOOPMAN);
     trace!("Writing buffer to digest calculator");
     digest.write(b);
 
